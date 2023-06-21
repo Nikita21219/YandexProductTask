@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"main/internal/courier"
@@ -99,7 +100,37 @@ func couriers(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		getCouriers(w, r)
 		return
-	} else {
+	} else if r.Method == "POST" {
 		pushCouriers(w, r)
+	}
+}
+
+func courierId(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("Error to convert ascii to int:", err)
+		return
+	}
+
+	ctx := context.Background()
+	c, err := courierRepo.FindOne(ctx, id)
+	if err != nil {
+		log.Println("Error to get couriers from db", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	data, err := json.Marshal(c)
+	if err != nil {
+		log.Println("Error marshal data:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(data)
+	if err != nil {
+		log.Println("Error write data:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }

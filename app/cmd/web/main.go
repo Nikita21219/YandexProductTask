@@ -32,6 +32,7 @@ func init() {
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/couriers", couriers).Methods("GET", "POST")
+	r.HandleFunc("/couriers/{id:[0-9]+}", courierId).Methods("GET")
 
 	http.Handle("/", r)
 	err := http.ListenAndServe(":8080", r)
