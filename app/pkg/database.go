@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
+	"main/internal/config"
 	"main/pkg/utils"
 	"time"
 )
@@ -18,8 +19,15 @@ type DBClient interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func NewClient(ctx context.Context, username, password, host, port, dbName string) (pool *pgxpool.Pool, err error) {
-	queryConnection := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?%s", username, password, host, port, dbName)
+func NewClient(ctx context.Context, cfg *config.Config) (pool *pgxpool.Pool, err error) {
+	queryConnection := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s?%s",
+		cfg.PostgresCfg.User,
+		cfg.PostgresCfg.Password,
+		cfg.PostgresCfg.Host,
+		cfg.PostgresCfg.Port,
+		cfg.PostgresCfg.DbName,
+	)
 
 	err = utils.DoWithTries(func() error {
 
@@ -41,6 +49,7 @@ func NewClient(ctx context.Context, username, password, host, port, dbName strin
 	return pool, nil
 }
 
+// TODO remove it
 //CREATE TABLE "order" (
 //id SERIAL PRIMARY KEY,
 //weight INTEGER,
