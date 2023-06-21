@@ -1,6 +1,8 @@
 package courier
 
-import "regexp"
+import (
+	"main/pkg/utils"
+)
 
 type CourierType string
 
@@ -29,12 +31,7 @@ func (c *CourierDto) Valid() (bool, error) {
 	}
 
 	for _, hours := range c.WorkingHours {
-		match, err := regexp.MatchString(`^\d{2}:\d{2}-\d{2}:\d{2}$`, hours)
-		if err != nil {
-			return false, err
-		}
-
-		if !match {
+		if !utils.ValidTime(hours) {
 			return false, nil
 		}
 	}

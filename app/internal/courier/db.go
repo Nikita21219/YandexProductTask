@@ -38,17 +38,17 @@ func (r *repository) CreateAll(ctx context.Context, couriers []*CourierDto) erro
 	return err
 }
 
-func (r *repository) FindAll(ctx context.Context) ([]Courier, error) {
+func (r *repository) FindAll(ctx context.Context) ([]CourierDto, error) {
 	q := `SELECT id, courier_type, regions, working_hours FROM courier`
 	rows, err := r.client.Query(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 
-	couriers := make([]Courier, 0, 50)
+	couriers := make([]CourierDto, 0, 50)
 
 	for rows.Next() {
-		var c Courier
+		var c CourierDto
 		err = rows.Scan(&c.Id, &c.CourierType, &c.Regions, &c.WorkingHours)
 		if err != nil {
 			return nil, err
@@ -62,26 +62,26 @@ func (r *repository) FindAll(ctx context.Context) ([]Courier, error) {
 	return couriers, nil
 }
 
-func (r *repository) FindOne(ctx context.Context, id int) (Courier, error) {
+func (r *repository) FindOne(ctx context.Context, id int) (CourierDto, error) {
 	q := `SELECT id, courier_type, regions, working_hours FROM courier WHERE id = $1`
-	var c Courier
+	var c CourierDto
 	if err := r.client.QueryRow(ctx, q, id).Scan(&c.Id, &c.CourierType, &c.Regions, &c.WorkingHours); err != nil {
-		return Courier{}, err
+		return CourierDto{}, err
 	}
 	return c, nil
 }
 
-func (r *repository) FindByLimitAndOffset(ctx context.Context, l, o int) (c []Courier, err error) {
+func (r *repository) FindByLimitAndOffset(ctx context.Context, l, o int) (c []CourierDto, err error) {
 	q := `SELECT id, courier_type, regions, working_hours FROM courier ORDER BY id LIMIT $1 OFFSET $2`
 	rows, err := r.client.Query(ctx, q, l, o)
 	if err != nil {
 		return nil, err
 	}
 
-	couriers := make([]Courier, 0, l)
+	couriers := make([]CourierDto, 0, l)
 
 	for rows.Next() {
-		var c Courier
+		var c CourierDto
 		err = rows.Scan(&c.Id, &c.CourierType, &c.Regions, &c.WorkingHours)
 		if err != nil {
 			return nil, err
@@ -95,7 +95,7 @@ func (r *repository) FindByLimitAndOffset(ctx context.Context, l, o int) (c []Co
 	return couriers, nil
 }
 
-func (r *repository) Update(ctx context.Context, courier Courier) error {
+func (r *repository) Update(ctx context.Context, courier CourierDto) error {
 	//TODO implement me
 	panic("implement me")
 }

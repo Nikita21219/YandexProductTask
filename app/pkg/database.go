@@ -40,3 +40,11 @@ func NewClient(ctx context.Context, username, password, host, port, dbName strin
 
 	return pool, nil
 }
+
+//CREATE TABLE "order" (
+//id SERIAL PRIMARY KEY,
+//weight INTEGER,
+//region INTEGER,
+//delivery_time VARCHAR(13),
+//price INTEGER
+//);
