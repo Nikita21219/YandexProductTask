@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"gopkg.in/yaml.v3"
 	"log"
+	"main/cmd/web/handlers"
 	"main/internal/config"
 	"main/internal/courier"
 	"main/internal/order"
@@ -14,22 +15,10 @@ import (
 	"os"
 )
 
-var courierRepo courier.Repository
-var orderRepo order.Repository
 var cfg *config.Config
 
 func init() {
 	cfg = LoadConfig()
-
-	ctx := context.Background()
-	psqlClient, err := pkg.NewClient(ctx, cfg)
-
-	if err != nil {
-		log.Fatalln("Error create db client:", err)
-	}
-
-	courierRepo = courier.NewRepo(psqlClient)
-	orderRepo = order.NewRepo(psqlClient)
 }
 
 func LoadConfig() *config.Config {
@@ -47,16 +36,32 @@ func LoadConfig() *config.Config {
 }
 
 func main() {
+	// Create postgres client
+	psqlClient, err := pkg.NewClient(context.Background(), cfg)
+	if err != nil {
+		log.Fatalln("Error create db client:", err)
+	}
+
+	// Init repositories
+	courierRepo := courier.NewRepo(psqlClient)
+	orderRepo := order.NewRepo(psqlClient)
+
+	// Routes
 	r := mux.NewRouter()
-	r.HandleFunc("/couriers", couriers).Methods("GET", "POST")
-	r.HandleFunc("/couriers/{id:[0-9]+}", courierId).Methods("GET")
-	r.HandleFunc("/orders", orders).Methods("GET", "POST")
-	r.HandleFunc("/orders/{id:[0-9]+}", orderId).Methods("GET")
+
+	// Couriers
+	r.HandleFunc("/couriers", handlers.Couriers(courierRepo)).Methods("GET", "POST")
+	r.HandleFunc("/couriers/{id:[0-9]+}", handlers.CourierId(courierRepo)).Methods("GET")
+
+	// Orders
+	r.HandleFunc("/orders", handlers.Orders(orderRepo)).Methods("GET", "POST")
+	r.HandleFunc("/orders/{id:[0-9]+}", handlers.OrderId(orderRepo)).Methods("GET")
+	r.HandleFunc("/orders/complete", handlers.OrderComplete(orderRepo)).Methods("POST")
 
 	http.Handle("/", r)
 
 	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-	err := http.ListenAndServe(addr, r)
+	err = http.ListenAndServe(addr, r)
 	if err != nil {
 		log.Fatalln("Error launch web server:", err)
 	}
