@@ -60,7 +60,7 @@ func main() {
 
 	http.Handle("/", r)
 
-	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+	addr := fmt.Sprintf("%s:%s", cfg.AppCfg.Host, cfg.AppCfg.Port)
 	err = http.ListenAndServe(addr, r)
 	if err != nil {
 		log.Fatalln("Error launch web server:", err)

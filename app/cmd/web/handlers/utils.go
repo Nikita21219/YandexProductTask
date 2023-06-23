@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -26,4 +28,11 @@ func getLimitAndOffset(query url.Values) (int, int, error) {
 	}
 
 	return limit, offset, nil
+}
+
+func IdempotentKeyCheckMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Hello from middleware")
+		next(w, r)
+	}
 }

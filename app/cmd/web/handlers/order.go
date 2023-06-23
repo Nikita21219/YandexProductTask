@@ -120,7 +120,7 @@ func OrderId(orderRepo order.Repository) http.HandlerFunc {
 }
 
 func OrderComplete(orderRepo order.Repository) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-	}
+	return IdempotentKeyCheckMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Hello after middleware")
+	})
 }

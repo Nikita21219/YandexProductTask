@@ -8,16 +8,26 @@ type PostgresConfig struct {
 	Port     string `yaml:"port"`
 }
 
+type RedisConfig struct {
+	Port string `yaml:"port"`
+	Host string `yaml:"host"`
+}
+
+type AppConfig struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
+}
+
 type Config struct {
-	Host        string         `yaml:"host"`
-	Port        string         `yaml:"port"`
+	AppCfg      AppConfig      `yaml:"app"`
 	PostgresCfg PostgresConfig `yaml:"db"`
+	RedisCfg    RedisConfig    `yaml:"redis"`
 }
 
 func NewConfig() *Config {
 	return &Config{
-		Host:        "",
-		Port:        "",
+		AppCfg:      AppConfig{},
 		PostgresCfg: PostgresConfig{},
+		RedisCfg:    RedisConfig{},
 	}
 }
