@@ -19,7 +19,7 @@ type DBClient interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func NewClient(ctx context.Context, cfg *config.Config) (pool *pgxpool.Pool, err error) {
+func NewPsqlClient(ctx context.Context, cfg *config.Config) (pool *pgxpool.Pool, err error) {
 	queryConnection := fmt.Sprintf(
 		"postgresql://%s:%s@%s:%s/%s?%s",
 		cfg.PostgresCfg.User,

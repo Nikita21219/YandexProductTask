@@ -37,9 +37,15 @@ func LoadConfig() *config.Config {
 
 func main() {
 	// Create postgres client
-	psqlClient, err := pkg.NewClient(context.Background(), cfg)
+	psqlClient, err := pkg.NewPsqlClient(context.Background(), cfg)
 	if err != nil {
 		log.Fatalln("Error create db client:", err)
+	}
+
+	// Create redis client
+	redisClient, err := pkg.NewRedisClient(context.Background(), cfg)
+	if err != nil {
+		log.Fatalln("Error create redis client:", err)
 	}
 
 	// Init repositories
@@ -56,7 +62,7 @@ func main() {
 	// Orders
 	r.HandleFunc("/orders", handlers.Orders(orderRepo)).Methods("GET", "POST")
 	r.HandleFunc("/orders/{id:[0-9]+}", handlers.OrderId(orderRepo)).Methods("GET")
-	r.HandleFunc("/orders/complete", handlers.OrderComplete(orderRepo)).Methods("POST")
+	r.HandleFunc("/orders/complete", handlers.OrderComplete(orderRepo, redisClient)).Methods("POST")
 
 	http.Handle("/", r)
 
