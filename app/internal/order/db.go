@@ -45,11 +45,11 @@ func (r *repository) FindAll(ctx context.Context) ([]OrderDto, error) {
 	panic("implement me")
 }
 
-func (r *repository) FindOne(ctx context.Context, id int) (OrderDto, error) {
-	q := `SELECT id, weight, region, delivery_time, price FROM "order" WHERE id = $1`
-	var o OrderDto
-	if err := r.client.QueryRow(ctx, q, id).Scan(&o.Id, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price); err != nil {
-		return OrderDto{}, err
+func (r *repository) FindOne(ctx context.Context, id int) (Order, error) {
+	q := `SELECT id, courier_id, weight, region, delivery_time, price FROM "order" WHERE id = $1`
+	var o Order
+	if err := r.client.QueryRow(ctx, q, id).Scan(&o.Id, &o.CourierId, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price); err != nil {
+		return Order{}, err
 	}
 	return o, nil
 }
@@ -78,9 +78,10 @@ func (r *repository) FindByLimitAndOffset(ctx context.Context, l, o int) ([]Orde
 	return orders, nil
 }
 
-func (r *repository) Update(ctx context.Context, courier OrderDto) error {
-	//TODO implement me
-	panic("implement me")
+func (r *repository) Update(ctx context.Context, o Order, courierId int) error {
+	q := `UPDATE "order" SET courier_id = $1 WHERE id = $2`
+	_, err := r.client.Exec(ctx, q, courierId, o.Id)
+	return err
 }
 
 func (r *repository) Delete(ctx context.Context, id int) error {

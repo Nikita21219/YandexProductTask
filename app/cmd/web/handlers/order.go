@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"main/internal/order"
+	"main/internal/order_complete"
 	"net/http"
 	"strconv"
 )
@@ -44,7 +45,7 @@ func getOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Repositor
 }
 
 func pushOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Repository) {
-	var ordersFromDb []*order.OrderDto
+	var orders []*order.OrderDto
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -54,14 +55,14 @@ func pushOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Reposito
 	}
 	defer r.Body.Close()
 
-	err = json.Unmarshal(body, &ordersFromDb)
+	err = json.Unmarshal(body, &orders)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Println(err)
 		return
 	}
 
-	for _, o := range ordersFromDb {
+	for _, o := range orders {
 		if !o.Valid() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -69,7 +70,7 @@ func pushOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Reposito
 	}
 
 	ctx := context.Background()
-	err = orderRepo.CreateAll(ctx, ordersFromDb)
+	err = orderRepo.CreateAll(ctx, orders)
 	if err != nil {
 		log.Println("Error to create orders:", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -121,7 +122,26 @@ func OrderId(orderRepo order.Repository) http.HandlerFunc {
 }
 
 func OrderComplete(orderRepo order.Repository, rdb *redis.Client) http.HandlerFunc {
-	return IdempotentKeyCheckMiddleware(rdb, func(w http.ResponseWriter, r *http.Request) {
+	return IdempotentKeyCheckMiddleware(rdb, func(w http.ResponseWriter, r *http.Request, oc *order_complete.OrderCompleteDto) {
+		o, err := orderRepo.FindOne(context.Background(), oc.OrderId)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Error to complete order:", err)
+			return
+		}
 
+		if o.CourierId.Valid {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Error to complete order:", fmt.Errorf("this order already has a courier"))
+			return
+		}
+
+		err = orderRepo.Update(context.Background(), o, oc.CourierId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Error to update order with id %d: %s", o.Id, err)
+			return
+		}
+		log.Printf("Order with id %d updated successfully", o.Id)
 	})
 }

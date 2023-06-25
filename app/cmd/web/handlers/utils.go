@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+type NextHandler func(w http.ResponseWriter, r *http.Request, oc *order_complete.OrderCompleteDto)
+
 func getLimitAndOffset(query url.Values) (int, int, error) {
 	offsets, ok := query["offset"]
 	if !ok || len(offsets) != 1 {
@@ -36,7 +38,7 @@ func getLimitAndOffset(query url.Values) (int, int, error) {
 	return limit, offset, nil
 }
 
-func IdempotentKeyCheckMiddleware(rdb *redis.Client, next http.HandlerFunc) http.HandlerFunc {
+func IdempotentKeyCheckMiddleware(rdb *redis.Client, next NextHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idempKey := r.Header.Get("Idempotency-Key")
 		if idempKey == "" {
@@ -65,7 +67,7 @@ func IdempotentKeyCheckMiddleware(rdb *redis.Client, next http.HandlerFunc) http
 		if lastTimeParams.Err() != nil {
 			status := rdb.Set(context.Background(), idempKey, oc, 60*60*time.Second)
 			log.Println("Redis set Idempotency-Key status:", status)
-			next(w, r)
+			next(w, r, oc)
 			return
 		}
 
@@ -91,7 +93,7 @@ func IdempotentKeyCheckMiddleware(rdb *redis.Client, next http.HandlerFunc) http
 		} else {
 			status := rdb.Set(context.Background(), idempKey, oc, 60*60*time.Second)
 			log.Println("Redis set Idempotency-Key status:", status)
-			next(w, r)
+			next(w, r, oc)
 		}
 	}
 }
