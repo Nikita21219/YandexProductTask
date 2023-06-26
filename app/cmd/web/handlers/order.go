@@ -45,7 +45,7 @@ func getOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Repositor
 }
 
 func pushOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Repository) {
-	var orders []*order.OrderDto
+	var ordersDto []*order.OrderDto
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -55,18 +55,26 @@ func pushOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Reposito
 	}
 	defer r.Body.Close()
 
-	err = json.Unmarshal(body, &orders)
+	err = json.Unmarshal(body, &ordersDto)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Println(err)
 		return
 	}
 
-	for _, o := range orders {
+	orders := make([]*order.Order, 0, len(ordersDto))
+	for _, o := range ordersDto {
 		if !o.Valid() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
+		orders = append(orders, &order.Order{
+			Weight:       o.Weight,
+			Region:       o.Region,
+			DeliveryTime: o.DeliveryTime,
+			Price:        o.Price,
+		})
 	}
 
 	ctx := context.Background()
@@ -132,11 +140,11 @@ func OrderComplete(orderRepo order.Repository, rdb *redis.Client) http.HandlerFu
 
 		if o.CourierId.Valid {
 			w.WriteHeader(http.StatusBadRequest)
-			log.Println("Error to complete order:", fmt.Errorf("this order already has a courier"))
+			log.Println("Error to complete order: this order already has a courier")
 			return
 		}
 
-		err = orderRepo.Update(context.Background(), o, oc.CourierId)
+		err = orderRepo.Update(context.Background(), o, oc)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Printf("Error to update order with id %d: %s", o.Id, err)

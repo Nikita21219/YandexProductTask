@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/redis/go-redis/v9"
 	"io"
 	"log"
@@ -38,6 +39,29 @@ func getLimitAndOffset(query url.Values) (int, int, error) {
 	return limit, offset, nil
 }
 
+func getStartDateEndDate(query url.Values) (string, string, error) {
+	startDate, ok := query["start_date"]
+	if !ok || len(startDate) != 1 {
+		return "", "", fmt.Errorf("start_date not valid")
+	}
+
+	endDate, ok := query["end_date"]
+	if !ok || len(endDate) != 1 {
+		return "", "", fmt.Errorf("end_date not valid")
+	}
+
+	layout := "2006-01-02"
+	_, err := time.Parse(layout, startDate[0])
+	if err != nil {
+		return "", "", err
+	}
+	_, err = time.Parse(layout, endDate[0])
+	if err != nil {
+		return "", "", err
+	}
+	return startDate[0], endDate[0], nil
+}
+
 func IdempotentKeyCheckMiddleware(rdb *redis.Client, next NextHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idempKey := r.Header.Get("Idempotency-Key")
@@ -57,7 +81,7 @@ func IdempotentKeyCheckMiddleware(rdb *redis.Client, next NextHandler) http.Hand
 
 		oc := &order_complete.OrderCompleteDto{}
 		err = json.Unmarshal(stream, oc)
-		if err != nil {
+		if err != nil || !oc.Valid() {
 			log.Println("Error unmarshal data from body request:", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return

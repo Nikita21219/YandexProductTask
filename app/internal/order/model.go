@@ -1,6 +1,8 @@
 package order
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 type Order struct {
 	Id           int

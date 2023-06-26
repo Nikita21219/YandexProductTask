@@ -52,12 +52,12 @@ func main() {
 	courierRepo := courier.NewRepo(psqlClient)
 	orderRepo := order.NewRepo(psqlClient)
 
-	// Routes
 	r := mux.NewRouter()
 
 	// Couriers
 	r.HandleFunc("/couriers", handlers.Couriers(courierRepo)).Methods("GET", "POST")
 	r.HandleFunc("/couriers/{id:[0-9]+}", handlers.CourierId(courierRepo)).Methods("GET")
+	r.HandleFunc("/couriers/meta-info/{id:[0-9]+}", handlers.CourierRating(orderRepo)).Methods("GET")
 
 	// Orders
 	r.HandleFunc("/orders", handlers.Orders(orderRepo)).Methods("GET", "POST")

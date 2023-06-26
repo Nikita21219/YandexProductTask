@@ -60,3 +60,8 @@ func ValidTime(time string) bool {
 
 	return true
 }
+
+func ValidDate(date string) bool {
+	_, err := time.Parse("2006-01-02", date)
+	return err == nil
+}
