@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"main/internal/order_complete"
+	"time"
 )
 
 type Repository interface {
@@ -13,5 +14,5 @@ type Repository interface {
 	FindOne(ctx context.Context, id int) (Order, error)
 	Update(ctx context.Context, o Order, oc *order_complete.OrderCompleteDto) error
 	Delete(ctx context.Context, id int) error
-	FindAllInTimeInterval(ctx context.Context, startDate, endDate string, courierId int) ([]Order, error)
+	FindAllInTimeInterval(ctx context.Context, startDate, endDate time.Time, courierId int) ([]Order, error)
 }

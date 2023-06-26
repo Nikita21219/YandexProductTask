@@ -57,7 +57,7 @@ func main() {
 	// Couriers
 	r.HandleFunc("/couriers", handlers.Couriers(courierRepo)).Methods("GET", "POST")
 	r.HandleFunc("/couriers/{id:[0-9]+}", handlers.CourierId(courierRepo)).Methods("GET")
-	r.HandleFunc("/couriers/meta-info/{id:[0-9]+}", handlers.CourierRating(orderRepo)).Methods("GET")
+	r.HandleFunc("/couriers/meta-info/{id:[0-9]+}", handlers.CourierRating(orderRepo, courierRepo)).Methods("GET")
 
 	// Orders
 	r.HandleFunc("/orders", handlers.Orders(orderRepo)).Methods("GET", "POST")

@@ -11,4 +11,5 @@ type Order struct {
 	Region       int
 	DeliveryTime string
 	Price        int
+	CompleteTime sql.NullTime
 }

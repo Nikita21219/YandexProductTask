@@ -7,6 +7,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"io"
 	"log"
+	"main/internal/courier"
+	"main/internal/order"
 	"main/internal/order_complete"
 	"net/http"
 	"net/url"
@@ -39,27 +41,41 @@ func getLimitAndOffset(query url.Values) (int, int, error) {
 	return limit, offset, nil
 }
 
-func getStartDateEndDate(query url.Values) (string, string, error) {
+func getStartDateEndDate(query url.Values) (time.Time, time.Time, error) {
 	startDate, ok := query["start_date"]
 	if !ok || len(startDate) != 1 {
-		return "", "", fmt.Errorf("start_date not valid")
+		return time.Time{}, time.Time{}, fmt.Errorf("start_date not valid")
 	}
 
 	endDate, ok := query["end_date"]
 	if !ok || len(endDate) != 1 {
-		return "", "", fmt.Errorf("end_date not valid")
+		return time.Time{}, time.Time{}, fmt.Errorf("end_date not valid")
 	}
 
 	layout := "2006-01-02"
 	_, err := time.Parse(layout, startDate[0])
 	if err != nil {
-		return "", "", err
+		return time.Time{}, time.Time{}, err
 	}
 	_, err = time.Parse(layout, endDate[0])
 	if err != nil {
-		return "", "", err
+		return time.Time{}, time.Time{}, err
 	}
-	return startDate[0], endDate[0], nil
+
+	start, err := time.Parse("2006-01-02", startDate[0])
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	end, err := time.Parse("2006-01-02", endDate[0])
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	if end.Before(start) {
+		return time.Time{}, time.Time{}, fmt.Errorf("End date after the start date")
+	}
+	return start, end, nil
 }
 
 func IdempotentKeyCheckMiddleware(rdb *redis.Client, next NextHandler) http.HandlerFunc {
@@ -81,8 +97,12 @@ func IdempotentKeyCheckMiddleware(rdb *redis.Client, next NextHandler) http.Hand
 
 		oc := &order_complete.OrderCompleteDto{}
 		err = json.Unmarshal(stream, oc)
-		if err != nil || !oc.Valid() {
+		if err != nil {
 			log.Println("Error unmarshal data from body request:", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		} else if !oc.Valid() {
+			log.Println("Data form request not valid")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -120,4 +140,23 @@ func IdempotentKeyCheckMiddleware(rdb *redis.Client, next NextHandler) http.Hand
 			next(w, r, oc)
 		}
 	}
+}
+
+func GetRatingCourier(orders []order.Order, startDate, endDate time.Time, courierRepo courier.Repository) (float64, error) {
+	hours := endDate.Sub(startDate).Hours()
+	courierId := int(orders[0].CourierId.Int64)
+	c, err := courierRepo.FindOne(context.Background(), courierId)
+	if err != nil {
+		return -1, err
+	}
+	multiplier := 0.0
+	switch c.CourierType {
+	case "FOOT":
+		multiplier = 3.0
+	case "BIKE":
+		multiplier = 2.0
+	case "AUTO":
+		multiplier = 1.0
+	}
+	return float64(len(orders)) / hours * multiplier, nil
 }

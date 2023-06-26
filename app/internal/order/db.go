@@ -95,11 +95,11 @@ func (r *repository) Delete(ctx context.Context, id int) error {
 	panic("implement me")
 }
 
-func (r *repository) FindAllInTimeInterval(ctx context.Context, startDate, endDate string, courierId int) ([]Order, error) {
+func (r *repository) FindAllInTimeInterval(ctx context.Context, startDate, endDate time.Time, courierId int) ([]Order, error) {
 	q := `
-	SELECT id, courier_id, weight, region, delivery_time, price
+	SELECT id, courier_id, weight, region, delivery_time, price, complete_time
 	FROM "order" 
-	WHERE delivery_time >= $1 AND delivery_time < $2 AND courier_id = $3
+	WHERE complete_time >= $1 AND complete_time < $2 AND courier_id = $3
 	`
 
 	rows, err := r.client.Query(ctx, q, startDate, endDate, courierId)
@@ -111,7 +111,7 @@ func (r *repository) FindAllInTimeInterval(ctx context.Context, startDate, endDa
 
 	for rows.Next() {
 		var o Order
-		err = rows.Scan(&o.Id, &o.CourierId, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price)
+		err = rows.Scan(&o.Id, &o.CourierId, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price, &o.CompleteTime)
 		if err != nil {
 			return nil, err
 		}

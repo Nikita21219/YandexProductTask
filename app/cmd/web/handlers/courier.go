@@ -128,7 +128,7 @@ func CourierId(courierRepo courier.Repository) http.HandlerFunc {
 	}
 }
 
-func CourierRating(orderRepo order.Repository) http.HandlerFunc {
+func CourierRating(orderRepo order.Repository, courierRepo courier.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		startDate, endDate, err := getStartDateEndDate(r.URL.Query())
 		if err != nil {
@@ -149,10 +149,29 @@ func CourierRating(orderRepo order.Repository) http.HandlerFunc {
 			log.Println("Error to find all orders in time interval:", err)
 			return
 		}
+
 		if len(orders) == 0 {
+			log.Println("Orders not found")
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		fmt.Println("Orders:", orders)
+		rating, err := GetRatingCourier(orders, startDate, endDate, courierRepo)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Error to get rating courier with id %d: %s\n", courierId, err)
+			return
+		}
+
+		b, err := json.Marshal(courier.CourierRatingDto{
+			Rating: rating,
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		_, err = w.Write(b)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("Error to write data:", err)
+			return
+		}
 	}
 }

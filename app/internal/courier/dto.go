@@ -44,3 +44,7 @@ func (c *CourierDto) Valid() (bool, error) {
 
 	return true, nil
 }
+
+type CourierRatingDto struct {
+	Rating float64 `json:"rating"`
+}
