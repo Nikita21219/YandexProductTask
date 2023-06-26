@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/time/rate"
 	"io"
 	"log"
 	"main/internal/courier"
@@ -62,12 +63,12 @@ func getStartDateEndDate(query url.Values) (time.Time, time.Time, error) {
 		return time.Time{}, time.Time{}, err
 	}
 
-	start, err := time.Parse("2006-01-02", startDate[0])
+	start, err := time.Parse(layout, startDate[0])
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
 
-	end, err := time.Parse("2006-01-02", endDate[0])
+	end, err := time.Parse(layout, endDate[0])
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
@@ -143,7 +144,11 @@ func IdempotentKeyCheckMiddleware(rdb *redis.Client, next NextHandler) http.Hand
 }
 
 func GetRatingCourier(orders []order.Order, startDate, endDate time.Time, courierRepo courier.Repository) (float64, error) {
+	if len(orders) < 1 {
+		return -1, fmt.Errorf("Orders not found")
+	}
 	hours := endDate.Sub(startDate).Hours()
+	fmt.Println("hours:", hours)
 	courierId := int(orders[0].CourierId.Int64)
 	c, err := courierRepo.FindOne(context.Background(), courierId)
 	if err != nil {
@@ -159,4 +164,16 @@ func GetRatingCourier(orders []order.Order, startDate, endDate time.Time, courie
 		multiplier = 1.0
 	}
 	return float64(len(orders)) / hours * multiplier, nil
+}
+
+func RateLimiter(next http.HandlerFunc) http.HandlerFunc {
+	limiter := rate.NewLimiter(10, 10)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !limiter.Allow() {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		} else {
+			next(w, r)
+		}
+	}
 }

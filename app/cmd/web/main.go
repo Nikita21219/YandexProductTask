@@ -55,14 +55,20 @@ func main() {
 	r := mux.NewRouter()
 
 	// Couriers
-	r.HandleFunc("/couriers", handlers.Couriers(courierRepo)).Methods("GET", "POST")
-	r.HandleFunc("/couriers/{id:[0-9]+}", handlers.CourierId(courierRepo)).Methods("GET")
-	r.HandleFunc("/couriers/meta-info/{id:[0-9]+}", handlers.CourierRating(orderRepo, courierRepo)).Methods("GET")
+	r.HandleFunc("/couriers", handlers.RateLimiter(handlers.Couriers(courierRepo))).Methods("GET", "POST")
+	r.HandleFunc("/couriers/{id:[0-9]+}", handlers.RateLimiter(handlers.CourierId(courierRepo))).Methods("GET")
+	r.HandleFunc(
+		"/couriers/meta-info/{id:[0-9]+}",
+		handlers.RateLimiter(handlers.CourierRating(orderRepo, courierRepo)),
+	).Methods("GET")
 
 	// Orders
-	r.HandleFunc("/orders", handlers.Orders(orderRepo)).Methods("GET", "POST")
-	r.HandleFunc("/orders/{id:[0-9]+}", handlers.OrderId(orderRepo)).Methods("GET")
-	r.HandleFunc("/orders/complete", handlers.OrderComplete(orderRepo, redisClient)).Methods("POST")
+	r.HandleFunc("/orders", handlers.RateLimiter(handlers.Orders(orderRepo))).Methods("GET", "POST")
+	r.HandleFunc("/orders/{id:[0-9]+}", handlers.RateLimiter(handlers.OrderId(orderRepo))).Methods("GET")
+	r.HandleFunc(
+		"/orders/complete",
+		handlers.RateLimiter(handlers.OrderComplete(orderRepo, redisClient)),
+	).Methods("POST")
 
 	http.Handle("/", r)
 
