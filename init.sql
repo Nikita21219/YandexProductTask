@@ -1,18 +1,16 @@
-create table "order"
-(
-    id            serial primary key,
-    courier_id    integer references courier,
-    weight        integer not null,
-    region        integer not null,
-    delivery_time varchar(255),
-    complete_time timestamp,
-    price         integer not null
+CREATE TABLE IF NOT EXISTS courier (
+    id serial PRIMARY KEY,
+    courier_type varchar(50) NOT NULL,
+    regions integer[] NOT NULL,
+    working_hours text[] NOT NULL
 );
 
-create table courier
-(
-    id            serial primary key,
-    courier_type  varchar(50) not null,
-    regions       integer[]   not null,
-    working_hours text[]      not null
+CREATE TABLE IF NOT EXISTS "order" (
+    id serial PRIMARY KEY,
+    courier_id integer REFERENCES courier,
+    weight integer NOT NULL,
+    region integer NOT NULL,
+    delivery_time varchar(255),
+    complete_time timestamp,
+    price integer NOT NULL
 );
