@@ -26,7 +26,7 @@ func (c *CourierDto) Valid() (bool, error) {
 		return false, nil
 	}
 
-	if c.WorkingHours == nil || c.Regions == nil {
+	if c.WorkingHours == nil || c.Regions == nil || len(c.Regions) == 0 || c.WorkingHours == nil || len(c.WorkingHours) == 0 {
 		return false, nil
 	}
 

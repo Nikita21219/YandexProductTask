@@ -147,8 +147,10 @@ func GetRatingCourier(orders []order.Order, startDate, endDate time.Time, courie
 	if len(orders) < 1 {
 		return -1, fmt.Errorf("Orders not found")
 	}
+	if !orders[0].CourierId.Valid {
+		return -1, fmt.Errorf("CourierId not valid")
+	}
 	hours := endDate.Sub(startDate).Hours()
-	fmt.Println("hours:", hours)
 	courierId := int(orders[0].CourierId.Int64)
 	c, err := courierRepo.FindOne(context.Background(), courierId)
 	if err != nil {
@@ -162,6 +164,8 @@ func GetRatingCourier(orders []order.Order, startDate, endDate time.Time, courie
 		multiplier = 2.0
 	case "AUTO":
 		multiplier = 1.0
+	default:
+		return -1, fmt.Errorf("courier type \"%s\" not found", c.CourierType)
 	}
 	return float64(len(orders)) / hours * multiplier, nil
 }
