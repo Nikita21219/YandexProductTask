@@ -1,14 +1,14 @@
 app:
-  host: "localhost"
+  host: "app"
   port: "8080"
 
 db:
   user: "postgres"
-  host: "localhost"
-  port: "5433"
+  host: "db"
+  port: "5432"
   name: "yandex"
   password: "password"
 
 redis:
-  host: "localhost"
-  port: "6377"
+  host: "redis"
+  port: "6379"

@@ -16,15 +16,11 @@ services:
     container_name: yandex_db
     networks:
       - yandex_net
-    ports:
-      - "5433:5432"
 
   redis:
     image: redis:alpine3.17
     restart: unless-stopped
     container_name: yandex_redis
-    ports:
-      - "6377:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -33,17 +29,19 @@ services:
     networks:
       - yandex_net
 
-#  app:
-#    build: app/
-#    ports:
-#      - "8888:8888"
-#    restart: unless-stopped
-#    container_name: yandex_app
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#    networks:
-#      - yandex
+  app:
+    container_name: app
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - yandex_net
 
 networks:
   yandex_net:
