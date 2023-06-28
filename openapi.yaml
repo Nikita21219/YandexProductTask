@@ -1,0 +1,400 @@
+openapi: 3.0.1
+
+info:
+  title: Yandex
+  version: '1.0'
+
+tags:
+- name: order
+- name: courier
+
+paths:
+  /orders:
+    get:
+      tags:
+        - order
+      operationId: getOrders
+      parameters:
+        - name: limit
+          in: query
+          description: Максимальное количество заказов в выдаче. Если параметр не передан, то значение по умолчанию равно 1.
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 10
+        - name: offset
+          in: query
+          description: Количество заказов, которое нужно пропустить для отображения текущей страницы. Если параметр не передан, то значение по умолчанию равно 0.
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 0
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderDto'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+    post:
+      tags:
+        - order
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+        required: true
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderDto'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+  /orders/complete:
+    post:
+      tags:
+        - order
+      operationId: completeOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteOrder'
+        required: true
+      responses:
+        '200':
+          description: ok
+        '409':
+          description: idempotent key conflict
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+          required: true
+          description: Idempotency key for ensuring idempotent behavior of the request
+  /couriers:
+    get:
+      tags:
+        - courier
+      operationId: getCouriers
+      parameters:
+        - name: limit
+          in: query
+          description: Максимальное количество курьеров в выдаче. Если параметр не передан, то значение по умолчанию равно 1.
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 10
+        - name: offset
+          in: query
+          description: Количество курьеров, которое нужно пропустить для отображения текущей страницы. Если параметр не передан, то значение по умолчанию равно 0.
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 0
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierDto'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+    post:
+      tags:
+        - courier
+      operationId: createCourier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCourierRequest'
+        required: true
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCouriersResponse'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+  /orders/{order_id}:
+    get:
+      tags:
+        - order
+      operationId: getOrder
+      parameters:
+        - name: order_id
+          in: path
+          description: Order identifier
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDto'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+  /couriers/{courier_id}:
+    get:
+      tags:
+        - courier
+      operationId: getCourierById
+      parameters:
+        - name: courier_id
+          in: path
+          description: Courier identifier
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierDto'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+  /couriers/meta-info/{courier_id}:
+    get:
+      tags:
+        - courier
+      operationId: getCourierMetaInfo
+      parameters:
+        - name: courier_id
+          in: path
+          description: Courier identifier
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: startDate
+          in: query
+          description: Rating calculation start date
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2023-01-20'
+        - name: endDate
+          in: query
+          description: Rating calculation end date
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2023-01-21'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCourierMetaInfoResponse'
+components:
+  schemas:
+    CreateOrderDto:
+      required:
+        - cost
+        - delivery_time
+        - regions
+        - weight
+      type: object
+      properties:
+        weight:
+          type: number
+          format: float
+        regions:
+          type: integer
+          format: int32
+        delivery_time:
+          type: string
+          format: string
+        cost:
+          type: integer
+          format: int32
+    CreateOrderRequest:
+      required:
+        - orders
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateOrderDto'
+    OrderDto:
+      required:
+        - cost
+        - delivery_hours
+        - order_id
+        - regions
+        - weight
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        weight:
+          type: number
+          format: float
+        region:
+          type: integer
+          format: int32
+        delivery_time:
+          type: string
+          items:
+            type: string
+        price:
+          type: integer
+          format: int32
+        completed_time:
+          type: string
+          format: date
+    BadRequestResponse:
+      type: object
+    CompleteOrder:
+      required:
+        - complete_time
+        - order_time
+        - courier_id
+        - order_id
+      type: object
+      properties:
+        order_time:
+          type: string
+          format: time
+        courier_id:
+          type: integer
+          format: int64
+        order_id:
+          type: integer
+          format: int64
+        complete_time:
+          type: string
+          format: date-time
+    CreateCourierDto:
+      required:
+        - courier_type
+        - regions
+        - working_hours
+      type: object
+      properties:
+        courier_type:
+          type: string
+          enum:
+            - FOOT
+            - BIKE
+            - AUTO
+        regions:
+          type: array
+          items:
+            type: integer
+            format: int32
+        working_hours:
+          type: array
+          items:
+            type: string
+    CreateCourierRequest:
+      required:
+        - couriers
+      type: object
+      properties:
+        couriers:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateCourierDto'
+    CourierDto:
+      required:
+        - courier_id
+        - courier_type
+        - regions
+        - working_hours
+      type: object
+      properties:
+        courier_id:
+          type: integer
+          format: int64
+        courier_type:
+          type: string
+          enum:
+            - FOOT
+            - BIKE
+            - AUTO
+        regions:
+          type: array
+          items:
+            type: integer
+            format: int32
+        working_hours:
+          type: array
+          items:
+            type: string
+    CreateCouriersResponse:
+      required:
+        - couriers
+      type: object
+      properties:
+        couriers:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourierDto'
+    GetCourierMetaInfoResponse:
+      required:
+        - courier_id
+        - courier_type
+        - regions
+        - working_hours
+      type: object
+      properties:
+        rating:
+          type: number
+          format: float

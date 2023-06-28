@@ -8,6 +8,4 @@ type Repository interface {
 	CreateAll(ctx context.Context, couriers []*Courier) error
 	FindByLimitAndOffset(ctx context.Context, l, o int) (c []Courier, err error)
 	FindOne(ctx context.Context, id int) (Courier, error)
-	Update(ctx context.Context, courier Courier) error
-	Delete(ctx context.Context, id int) error
 }

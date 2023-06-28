@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"main/internal/order_complete"
 	"main/pkg"
@@ -11,11 +12,6 @@ import (
 
 type repository struct {
 	client pkg.DBClient
-}
-
-func (r *repository) CreateOne(ctx context.Context, c *Order) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (r *repository) CreateAll(ctx context.Context, orders []*Order) error {
@@ -42,22 +38,23 @@ func (r *repository) CreateAll(ctx context.Context, orders []*Order) error {
 	return err
 }
 
-func (r *repository) FindAll(ctx context.Context) ([]Order, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (r *repository) FindOne(ctx context.Context, id int) (Order, error) {
-	q := `SELECT id, courier_id, weight, region, delivery_time, price FROM "order" WHERE id = $1`
+	q := `SELECT id, courier_id, weight, region, delivery_time, price, complete_ FROM "order" WHERE id = $1`
+
+	var completedTime sql.NullTime
 	var o Order
-	if err := r.client.QueryRow(ctx, q, id).Scan(&o.Id, &o.CourierId, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price); err != nil {
+	if err := r.client.QueryRow(ctx, q, id).Scan(&o.Id, &o.CourierId, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price, &completedTime); err != nil {
 		return Order{}, err
 	}
+	if completedTime.Valid {
+		o.CompletedTime = completedTime
+	}
+
 	return o, nil
 }
 
 func (r *repository) FindByLimitAndOffset(ctx context.Context, l, o int) ([]Order, error) {
-	q := `SELECT id, weight, region, delivery_time, price FROM "order" ORDER BY id LIMIT $1 OFFSET $2`
+	q := `SELECT id, weight, region, delivery_time, price, complete_time FROM "order" ORDER BY id LIMIT $1 OFFSET $2`
 	rows, err := r.client.Query(ctx, q, l, o)
 	if err != nil {
 		return nil, err
@@ -67,7 +64,11 @@ func (r *repository) FindByLimitAndOffset(ctx context.Context, l, o int) ([]Orde
 
 	for rows.Next() {
 		var order Order
-		err = rows.Scan(&order.Id, &order.Weight, &order.Region, &order.DeliveryTime, &order.Price)
+		var completedTime sql.NullTime
+		err = rows.Scan(&order.Id, &order.Weight, &order.Region, &order.DeliveryTime, &order.Price, &completedTime)
+		if completedTime.Valid {
+			order.CompletedTime = completedTime
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -90,11 +91,6 @@ func (r *repository) Update(ctx context.Context, o Order, oc *order_complete.Ord
 	return err
 }
 
-func (r *repository) Delete(ctx context.Context, id int) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (r *repository) FindAllInTimeInterval(ctx context.Context, startDate, endDate time.Time, courierId int) ([]Order, error) {
 	q := `
 	SELECT id, courier_id, weight, region, delivery_time, price, complete_time
@@ -111,7 +107,7 @@ func (r *repository) FindAllInTimeInterval(ctx context.Context, startDate, endDa
 
 	for rows.Next() {
 		var o Order
-		err = rows.Scan(&o.Id, &o.CourierId, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price, &o.CompleteTime)
+		err = rows.Scan(&o.Id, &o.CourierId, &o.Weight, &o.Region, &o.DeliveryTime, &o.Price, &o.CompletedTime)
 		if err != nil {
 			return nil, err
 		}

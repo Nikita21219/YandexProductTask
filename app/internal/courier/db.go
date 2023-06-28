@@ -95,16 +95,6 @@ func (r *repository) FindByLimitAndOffset(ctx context.Context, l, o int) (c []Co
 	return couriers, nil
 }
 
-func (r *repository) Update(ctx context.Context, courier Courier) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (r *repository) Delete(ctx context.Context, id int) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func NewRepo(client pkg.DBClient) Repository {
 	return &repository{
 		client: client,

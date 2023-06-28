@@ -48,12 +48,3 @@ func NewPsqlClient(ctx context.Context, cfg *config.Config) (pool *pgxpool.Pool,
 
 	return pool, nil
 }
-
-// TODO remove it
-//CREATE TABLE "order" (
-//id SERIAL PRIMARY KEY,
-//weight INTEGER,
-//region INTEGER,
-//delivery_time VARCHAR(13),
-//price INTEGER
-//);

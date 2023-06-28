@@ -23,13 +23,36 @@ func getOrders(w http.ResponseWriter, r *http.Request, orderRepo order.Repositor
 	}
 
 	ctx := context.Background()
-	couriersFromDb, err := orderRepo.FindByLimitAndOffset(ctx, limit, offset)
+	orders, err := orderRepo.FindByLimitAndOffset(ctx, limit, offset)
 	if err != nil {
-		log.Println("Error to get couriers from db", err)
+		log.Println("Error to get orders from db", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	data, err := json.Marshal(couriersFromDb)
+	ordersDto := make([]order.OrderDto, 0, len(orders))
+	for _, o := range orders {
+		t, err := o.CompletedTime.Value()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("Time not valid:", err)
+			return
+		}
+		var completedTime string
+		if t != nil {
+			completedTime = o.CompletedTime.Time.Format("2006-01-02")
+		}
+
+		ordersDto = append(ordersDto, order.OrderDto{
+			Id:            o.Id,
+			Weight:        o.Weight,
+			Region:        o.Region,
+			DeliveryTime:  o.DeliveryTime,
+			Price:         o.Price,
+			CompletedTime: completedTime,
+		})
+	}
+
+	data, err := json.Marshal(ordersDto)
 	if err != nil {
 		log.Println("Error marshal data:", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -113,7 +136,26 @@ func OrderId(orderRepo order.Repository) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		data, err := json.Marshal(o)
+
+		t, err := o.CompletedTime.Value()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("Time not valid:", err)
+		}
+
+		var completedTime string
+		if t != nil {
+			completedTime = o.CompletedTime.Time.Format("2006-01-02")
+		}
+
+		data, err := json.Marshal(order.OrderDto{
+			Id:            o.Id,
+			Weight:        o.Weight,
+			Region:        o.Weight,
+			DeliveryTime:  o.DeliveryTime,
+			Price:         o.Price,
+			CompletedTime: completedTime,
+		})
 		if err != nil {
 			log.Println("Error marshal data:", err)
 			w.WriteHeader(http.StatusInternalServerError)
